@@ -12,6 +12,8 @@ certifi = "==2021.5.30"
 mwclient = "*"
 numpy = "*"
 geopy = "*"
+folium = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.7"
