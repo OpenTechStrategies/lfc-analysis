@@ -10,6 +10,10 @@ blinker = "==1.4"
 brotlipy = "==0.7.0"
 certifi = "==2021.5.30"
 mwclient = "*"
+numpy = "*"
+geopy = "*"
+folium = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.7"
