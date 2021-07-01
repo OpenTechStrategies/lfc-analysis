@@ -6,14 +6,15 @@ from folium import FeatureGroup, LayerControl, Map, Marker
 
 
 competitions = ["LLIIA2020", "LFC100Change2020", "LFC100Change2017", "EO2020", "RacialEquity2030", "Climate2030", "ECW2020", "LoneStar2020"]
-
 site = mwclient.Site('torque.leverforchange.org/', 'GlobalView/', scheme="https")
 site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
 
 def main():
     mapit = folium.Map(location=[48, -102], zoom_start=6)
-    for competition in competitions:
+    colors = ["red", "blue", "gray", "green", "pink", "purple"]
+    for i in range(0, len(competitions)):
+        competition = competitions[i]
         response = site.api(
             'torquedataconnect',
             format='json',
@@ -25,7 +26,7 @@ def main():
 
         feature_group = FeatureGroup(competition)
         for coord in locations:
-            folium.Marker(location=[coord[0], coord[1]], fill_color='#43d9de', radius=4).add_to(feature_group)
+            folium.CircleMarker(location=[coord[0], coord[1]], fill_color='#43d9de', radius=10, color = colors[i], opacity = 0.5   ).add_to(feature_group)
         feature_group.add_to(mapit)
     LayerControl().add_to(mapit)
     mapit.save('map1.html')
