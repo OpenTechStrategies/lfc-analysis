@@ -3,36 +3,46 @@ import config
 from geopy.geocoders import Nominatim
 import folium
 from folium import FeatureGroup, LayerControl, Map, Marker
+import pandas as pd
+import sys
 
-
-competitions = ["LLIIA2020", "LFC100Change2020", "LFC100Change2017", "EO2020", "RacialEquity2030", "Climate2030", "ECW2020", "LoneStar2020"]
 site = mwclient.Site('torque.leverforchange.org/', 'GlobalView/', scheme="https")
 site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
 
 def main():
+    #Parse arguments
+    competition = sys.argv[1]
+    color = sys.argv[2]
+
+    #Setup Map
     mapit = folium.Map(location=[48, -102], zoom_start=6)
-    colors = ["red", "blue", "gray", "green", "pink", "purple"]
-    for i in range(0, len(competitions)):
-        competition = competitions[i]
-        response = site.api(
-            'torquedataconnect',
-            format='json',
-            path='/competitions/' + competition + '/proposals'
-        )
-        proposal_ids = response["result"]
+    loc = 'Corpus Christi'
+    title_html = '''
+                 <h3 align="center" style="font-size:16px"><b>Applicant Location Maps</b></h3>
+                 '''.format(loc)
 
-        locations = extract_locations(proposal_ids, competition)
+    #Retrieve proposal ids from competition
+    response = site.api(
+        'torquedataconnect',
+        format='json',
+        path='/competitions/' + competition + '/proposals'
+    )
+    proposal_ids = response["result"]
 
-        feature_group = FeatureGroup(competition)
-        for coord in locations:
-            folium.CircleMarker(location=[coord[0], coord[1]], fill_color='#43d9de', radius=10, color = colors[i], opacity = 0.5   ).add_to(feature_group)
-        feature_group.add_to(mapit)
+    locations = extract_locations(proposal_ids, competition) #Extract locations from proposal ids
+
+    feature_group = FeatureGroup(competition)
+    for coord in locations:
+        folium.CircleMarker(location=[coord[0], coord[1]], fill_color=color, radius=7, color = color, opacity = 0.5, weight = 1).add_to(feature_group)
+    feature_group.add_to(mapit)
     LayerControl().add_to(mapit)
-    mapit.save('map1.html')
-
+    mapit.get_root().html.add_child(folium.Element(title_html))
+    mapit.save('applicant_locations_' + competition + '.html')
 
 def extract_locations(proposal_ids, competition):
+    #Failed geolocation spreadsheet
+    error_list = []
     # Extract organization locations
     locations = []
     for id in proposal_ids:
@@ -50,7 +60,9 @@ def extract_locations(proposal_ids, competition):
             locations.append(coordinate_pair)
         except:
             print('error, not a location')
-
+            error_list.append([competition, id])
+    df = pd.DataFrame(error_list)
+    df.to_csv('error_file.csv')
     return locations
 
 def concat_org_location(proposal):
@@ -62,14 +74,7 @@ def concat_org_location(proposal):
             org_location.append(value)
         if key == "Org Country" or key == "Country" or key == "Nation":
             org_location.append(value)
-        """
-        if key == "Street Address":
-            org_location.append(value)
-        if "Locality" in key or "District" in key or "County" in key:
-            org_location.append(value)
-        if "State" in key or "Province" in key:
-            org_location.append(value)
-        """
+
     return org_location
 
 if __name__ == "__main__":
