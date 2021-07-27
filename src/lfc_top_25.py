@@ -12,44 +12,62 @@ site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
 
 def main():
-    #Parse arguments
-    '''
-    competition = sys.argv[1]
-    map_type = sys.argv[2]
-    color = sys.argv[3]
-    '''
+    competitions = ['LLIIA2020', 'LFC100Change2020', 'EO2020', 'RacialEquity2030', 'Climate2030', 'ECW2020', 'LoneStar2020'] # LFC100Change2017 left out
+    #competitions = ['Climate2030', 'ECW2020']
+    #duplicates = ['Arizona State University', 'CARE', 'Forterra NW', 'GRID Alternatives', 'Local Initiatives Support Corporation', 'Mercy Corps', 'Rocky Mountain Institute']
 
-    #Replace arguments
-    competition = 'LoneStar2020'
-    map_type = 'top_25'
-    color = 'blue'
-    #Setup Map
+    colors = ['blue', 'red', 'pink', 'purple', 'black', 'green', 'grey']
+
+    # Setup Map
     mapit = folium.Map(location=[48, -102], zoom_start=6)
-    loc = 'Corpus Christi'
-    title_html = '''
-                 <h3 align="center" style="font-size:16px"><b>Applicant Location Maps</b></h3>
-                 '''.format(loc)
 
-    #Retrieve proposal ids from competition
-    response = site.api(
-        'torquedataconnect',
-        format='json',
-        path='/competitions/' + competition + '/proposals'
-    )
-    proposal_ids = response["result"]
+    for i in range(len(competitions)):
+        competition = competitions[i]
+        color = colors[i]
+        loc = 'Corpus Christi'
+        title_html = '''
+                     <h3 align="center" style="font-size:16px"><b>Top 25 Proposals</b></h3>
+                     '''.format(loc)
 
-    locations = extract_locations_top_25(proposal_ids, competition, map_type) #Extract locations from proposal ids
+        #Retrieve proposal ids from competition
+        response = site.api(
+            'torquedataconnect',
+            format='json',
+            path='/competitions/' + competition + '/proposals'
+        )
+        proposal_ids = response["result"]
 
-    feature_group = FeatureGroup(competition)
-    for coord in locations:
-        folium.CircleMarker(location=[coord[0], coord[1]], fill_color=color, radius=7, color = color, opacity = 0.5, weight = 1).add_to(feature_group)
-    feature_group.add_to(mapit)
+        org_names, locations = extract_top_25_info(proposal_ids, competition) #Extract locations from proposal ids
+        duplicates = return_duplicate_orgs(org_names) # Returns organizations that have more than one proposal in top 25
+
+        feature_group = FeatureGroup(competition)
+        for i in range(len(locations)):
+            coord = locations[i]
+            try:
+                if org_names[i] in duplicates:
+                    folium.CircleMarker(location=[coord[0], coord[1]], fill_color=color, radius=14, color = color, opacity = 0.5, weight = 1).add_to(feature_group)
+                else:
+                    folium.CircleMarker(location=[coord[0], coord[1]], fill_color=color, radius=7, color=color, opacity=0.5, weight=1).add_to(feature_group)
+            except:
+                print("Failed mapping")
+        feature_group.add_to(mapit)
     LayerControl().add_to(mapit)
     mapit.get_root().html.add_child(folium.Element(title_html))
-    mapit.save(map_type + '_' + competition + '.html')
+    mapit.save('top_25_map.html')
 
 
-def extract_locations_top_25(proposal_ids, competition, map_type):
+def extract_top_25_info(proposal_ids, competition):
+    # Org name lookup
+    org_name_lookup = {
+        'LLIIA2020': ['Organization Name'],
+        'LFC100Change2020': ['Organization Legal Name'],
+        'EO2020': ['Organization Name'],
+        'RacialEquity2030': ['Organization name'],
+        'Climate2030': ['Organization Name'],
+        'ECW2020': ['Organization Name'],
+        'LoneStar2020': ['Organization Name']}
+    # Org names
+    org_names = []
 
     # Extract organization locations
     locations = []
@@ -61,16 +79,27 @@ def extract_locations_top_25(proposal_ids, competition, map_type):
             path='/competitions/' + competition + '/proposals' + '/' + id
         )
 
-        location_string = concat_org_location(response['result'])
+        location = concat_org_location(response['result'])
+        for key, value in response['result'].items():
+            if key in org_name_lookup[competition]:
+                org_names.append(value)
 
-        for location in location_string:
-            location_object = geolocator.geocode(location)  # Convert named address to latlong pair
-            try:
-                coordinate_pair = (location_object.latitude, location_object.longitude)
-                locations.append(coordinate_pair)
-            except:
-                print('error, not a location')
-    return locations
+        location_object = geolocator.geocode(location)  # Convert named address to latlong pair
+        try:
+            coordinate_pair = (location_object.latitude, location_object.longitude)
+            locations.append(coordinate_pair)
+        except:
+            print('error, not a location')
+            locations.append(())
+
+
+    return org_names, locations
+
+def return_duplicate_orgs(org_names):
+    np_org_names = np.array(org_names)
+    unique_names, counts = np.unique(np_org_names, return_counts=True)
+    duplicates = unique_names[counts > 1]
+    return duplicates
 
 def concat_org_location(proposal):
 
