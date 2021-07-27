@@ -13,52 +13,43 @@ site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
 
 def main():
-    #Parse arguments
-    '''
-    competition = sys.argv[1]
-    map_type = sys.argv[2]
-    color = sys.argv[3]
-    '''
 
+    competitions = ['LLIIA2020', 'LFC100Change2020', 'EO2020', 'RacialEquity2030', 'Climate2030', 'ECW2020', 'LoneStar2020']
 
-    #Replace arguments
-    competition = 'LFC100Change2020'
-    map_type = 'future_work'
-    color = 'blue'
     #Setup Map
     mapit = folium.Map(location=[48, -102], zoom_start=6, )
-    loc = 'Corpus Christi'
-    title_html = '''
-                 <h3 align="center" style="font-size:16px"><b>Future Work Location Maps</b></h3>
-                 '''.format(loc)
-    country_shapes = 'world_countries.json'
-    #Retrieve proposal ids from competition
-    response = site.api(
-        'torquedataconnect',
-        format='json',
-        path='/competitions/' + competition + '/proposals'
-    )
-    proposal_ids = response["result"]
+    locations = [] # future work locations
+    for i in range(len(competitions)):
+        competition = competitions[i]
+        loc = 'Corpus Christi'
+        title_html = '''
+                     <h3 align="center" style="font-size:16px"><b>Future Work Locations</b></h3>
+                     '''.format(loc)
+        country_shapes = 'world_countries.json'
+        #Retrieve proposal ids from competition
+        response = site.api(
+            'torquedataconnect',
+            format='json',
+            path='/competitions/' + competition + '/proposals'
+        )
+        proposal_ids = response["result"]
 
-    # Extract locations and convert to dataframe of countries and counts
-    locations = extract_locations(proposal_ids, competition, map_type) #Extract locations from proposal ids
+        # Extract locations and convert to dataframe of countries and counts
+        locations.extend(extract_locations(proposal_ids, competition)) #Extract locations from proposal ids
+
+    # Convert location list to dataframe with the country and number of occurrences
     np_locations = np.array(locations)
     values, counts = np.unique(np_locations, return_counts=True)
     country_data = pd.DataFrame(np.column_stack([values, counts]), columns=['country', 'occurrences'])
-
-    #Convert Data type
     country_data = country_data.astype({"country": str, "occurrences": int})
-    # country_data = replace_outliers(country_data)
-    print(country_data.dtypes)
 
-    # Put occurrence data on log scale
-    #country_data['occurrences'] = np.log(country_data['occurrences'])
-    min = country_data['occurrences'].min()
-    max = country_data['occurrences'].max()
-    #scale = np.geomspace(min, max, num = 10, endpoint = True)
 
-    scale = list(country_data['occurrences'].quantile([0, 0.25, 0.5, 0.75, 1]))
+    # Scale data for map
+    country_data['occurrences'] = np.log(country_data['occurrences'])
+    #scale = np.geomspace(country_data['occurrences'].min(), country_data['occurrences'].max(), num = 10, endpoint = True)
+    scale = list(country_data['occurrences'].quantile([0, 0.25, 0.5, 0.75, 1])) # Define scale
 
+    # Graph data on choropleth map
     folium.Choropleth(geo_data=country_shapes,
                       data=country_data,
                       columns=["country", "occurrences"],
@@ -68,8 +59,10 @@ def main():
                       nan_fill_color='white',
                       bins=scale).add_to(mapit)
 
+    # Title and save map
     mapit.get_root().html.add_child(folium.Element(title_html)) # Add title
-    mapit.save(map_type + '_' + competition + '.html') # Save html
+    mapit.save('future_work_map.html') # Save html
+
 def replace_outliers(country_data):
 
     # If row is not equal to United States or India
@@ -84,7 +77,7 @@ def replace_outliers(country_data):
     except:
         print("Data does not have country")
     return country_data
-def extract_locations(proposal_ids, competition, map_type):
+def extract_locations(proposal_ids, competition):
     # Extract locations
     locations = []
     for id in proposal_ids:
