@@ -22,6 +22,6 @@ In the file directory run
 python lfc_script.py [Competition key] [Color of map marker]  
 ```
 
-The competition name keys should be one of the following: LLIA2020, LFC100Change2020, LFC100Change2017, EO2020, RacialEquity2030, Climate2030, ECW2020, LoneStar    
+The competition name keys should be one of the following: LLIIA2020, LFC100Change2020, LFC100Change2017, EO2020, RacialEquity2030, Climate2030, ECW2020, LoneStar2020
 
 The colors can be one of the following: blue, red, black, purple  (For the full documentation of using colors in Folium, check https://python-visualization.github.io/folium/modules.html)  
