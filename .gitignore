@@ -130,3 +130,6 @@ dmypy.json
 
 # Config file for credentials
 config.py
+
+# Top 25 Spreadsheet
+highly_ranked_proposals.csv
