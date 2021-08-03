@@ -14,7 +14,7 @@ geolocator = Nominatim(user_agent = "map")
 def main():
 
     # Setup Map
-    mapit = folium.Map(location=[48, -102], zoom_start=6)
+    mapit = folium.Map(location=[48, 2], zoom_start=2)
 
     # Import extra data
     df_extra_data = pd.read_csv('highly_ranked_proposals.csv')
