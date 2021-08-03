@@ -16,7 +16,7 @@ def main():
     competitions = ['LLIIA2020', 'LFC100Change2020', 'EO2020', 'RacialEquity2030', 'Climate2030', 'ECW2020', 'LoneStar2020']
     #competitions = ['LLIIA2020']
     #Setup Map
-    mapit = folium.Map(location=[48, -102], zoom_start=6, )
+    mapit = folium.Map(location=[48, 2], zoom_start=2)
     locations = [] # future work locations
 
     country_shapes = 'world_countries.json'
