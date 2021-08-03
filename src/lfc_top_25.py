@@ -34,7 +34,7 @@ def main():
 
         proposal = response['result']
 
-        coord = extract_top_25_locations(proposal, competition) # Extract Location
+        coord = extract_top_25_locations(proposal) # Extract Location
 
         if coord == ():
             print("Empty coordinate")
@@ -49,8 +49,8 @@ def main():
             )
 
             if row['Type'] == 'NGO':
-                folium.CircleMarker(location=[coord[0], coord[1]],
-                                    fill_color='blue', radius=3.5,
+                folium.Circle(location=[coord[0], coord[1]],
+                                    fill_color='blue', radius=10000,
                                     color='blue', opacity=0.5,
                                     weight=1).add_to(fg_NGO)
             else:
@@ -78,16 +78,7 @@ def create_square_bounds(coord, side_length):
     lower_left = (S, W)
 
     return [upper_left, upper_right, lower_right, lower_left]
-def extract_top_25_locations(proposal, competition):
-    # Org name lookup
-    org_name_lookup = {
-        'LLIIA2020': ['Organization Name'],
-        'LFC100Change2020': ['Organization Legal Name'],
-        'EO2020': ['Organization Name'],
-        'RacialEquity2030': ['Organization name'],
-        'Climate2030': ['Organization Name'],
-        'ECW2020': ['Organization Name'],
-        'LoneStar2020': ['Organization Name']}
+def extract_top_25_locations(proposal):
 
     location = concat_org_location(proposal)
     location_object = geolocator.geocode(location)  # Convert named address to latlong pair
