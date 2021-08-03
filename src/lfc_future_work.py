@@ -6,8 +6,7 @@ from folium import FeatureGroup, LayerControl, Map, Marker
 import pandas as pd
 import numpy as np
 import sys
-import branca.colormap as cm
-from branca.colormap import linear
+import json
 site = mwclient.Site('torque.leverforchange.org/', 'GlobalView/', scheme="https")
 site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
@@ -15,17 +14,17 @@ geolocator = Nominatim(user_agent = "map")
 def main():
 
     competitions = ['LLIIA2020', 'LFC100Change2020', 'EO2020', 'RacialEquity2030', 'Climate2030', 'ECW2020', 'LoneStar2020']
-
+    #competitions = ['LLIIA2020']
     #Setup Map
     mapit = folium.Map(location=[48, -102], zoom_start=6, )
     locations = [] # future work locations
+
+    country_shapes = 'world_countries.json'
+    with open(country_shapes) as f:
+        map_data = json.loads(f.read())
     for i in range(len(competitions)):
         competition = competitions[i]
-        loc = 'Corpus Christi'
-        title_html = '''
-                     <h3 align="center" style="font-size:16px"><b>Future Work Locations</b></h3>
-                     '''.format(loc)
-        country_shapes = 'world_countries.json'
+
         #Retrieve proposal ids from competition
         response = site.api(
             'torquedataconnect',
@@ -41,16 +40,13 @@ def main():
     np_locations = np.array(locations)
     values, counts = np.unique(np_locations, return_counts=True)
     country_data = pd.DataFrame(np.column_stack([values, counts]), columns=['country', 'occurrences'])
-    country_data = country_data.astype({"country": str, "occurrences": int})
-
+    country_data = country_data.astype({"country": str, "occurrences": 'int64'})
 
     # Scale data for map
-    country_data['occurrences'] = np.log(country_data['occurrences'])
-    #scale = np.geomspace(country_data['occurrences'].min(), country_data['occurrences'].max(), num = 10, endpoint = True)
     scale = list(country_data['occurrences'].quantile([0, 0.25, 0.5, 0.75, 1])) # Define scale
 
     # Graph data on choropleth map
-    folium.Choropleth(geo_data=country_shapes,
+    choropleth = folium.Choropleth(geo_data=map_data,
                       data=country_data,
                       columns=["country", "occurrences"],
                       key_on='feature.properties.name',
@@ -59,9 +55,30 @@ def main():
                       nan_fill_color='white',
                       bins=scale).add_to(mapit)
 
+    # Prepare labels for country tiles
+    tooltip_text = []
+    for index in range(len(country_data)):
+        tooltip_text.append([country_data['country'][index], int(country_data['occurrences'][index])])
+    np_tooltip_text = np.array(tooltip_text)
+
+    #Append tooltip column to json file
+    length = len(map_data['features'])
+    for index in range(length):
+        country_name = map_data['features'][index]['properties']['name']
+
+        if country_name in np_tooltip_text[:,0]:
+            map_data['features'][index]['properties']['tooltip1'] = np_tooltip_text[
+                np.where(np_tooltip_text == country_name)[0][0], 1]
+        else:
+            map_data['features'][index]['properties']['tooltip1'] = 0
+
+    # Add custom labels to country tiles
+    choropleth.geojson.add_child(folium.features.GeoJsonTooltip(['tooltip1'], labels=False))
+
     # Title and save map
-    mapit.get_root().html.add_child(folium.Element(title_html)) # Add title
+
     mapit.save('future_work_map.html') # Save html
+
 
 def replace_outliers(country_data):
 
