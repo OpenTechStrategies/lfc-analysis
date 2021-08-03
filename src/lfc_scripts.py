@@ -11,12 +11,18 @@ site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
 
 def main():
+    '''
     #Parse arguments
     competition = sys.argv[1]
     color = sys.argv[2]
 
+    '''
+
+    competition = "LoneStar2020"
+    color = 'blue'
+
     #Setup Map
-    mapit = folium.Map(location=[48, -102], zoom_start=6)
+    mapit = folium.Map(location=[48, 2], zoom_start=2)
     title_html = '''
                  <h3 align="center" style="font-size:16px"><b>Applicant Location Maps</b></h3>
                  '''.format()
@@ -33,8 +39,8 @@ def main():
 
     feature_group = FeatureGroup(competition)
     for coord in locations:
-        folium.CircleMarker(location=[coord[0], coord[1]],
-                            fill_color=color, radius=7,
+        folium.Circle(location=[coord[0], coord[1]],
+                            fill_color=color, radius=10000,
                             color = color, opacity = 0.5,
                             weight = 1).add_to(feature_group)
     feature_group.add_to(mapit)
