@@ -14,7 +14,7 @@ geolocator = Nominatim(user_agent = "map")
 def main():
 
     competitions = ['LLIIA2020', 'LFC100Change2020', 'EO2020', 'RacialEquity2030', 'Climate2030', 'ECW2020', 'LoneStar2020']
-    #competitions = ['LLIIA2020']
+
     #Setup Map
     mapit = folium.Map(location=[48, 2], zoom_start=2)
     locations = [] # future work locations
@@ -75,8 +75,15 @@ def main():
     # Add custom labels to country tiles
     choropleth.geojson.add_child(folium.features.GeoJsonTooltip(['tooltip1'], labels=False))
 
-    # Title and save map
+    # Remove legend
+    del_list = []
+    for child in choropleth._children:
+        if child.startswith('color_map'):
+            del_list.append(child)
+    for del_item in del_list:
+        choropleth._children.pop(del_item)
 
+    # Title and save map
     mapit.save('future_work_map.html') # Save html
 
 
