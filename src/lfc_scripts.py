@@ -18,11 +18,11 @@ def main():
 
     '''
 
-    competition = "LoneStar2020"
+    competition = "RacialEquity2030"
     color = 'blue'
 
     #Setup Map
-    mapit = folium.Map(location=[48, 2], zoom_start=2)
+    mapit = folium.Map()
     title_html = '''
                  <h3 align="center" style="font-size:16px"><b>Applicant Location Maps</b></h3>
                  '''.format()
@@ -36,16 +36,22 @@ def main():
     proposal_ids = response["result"]
 
     locations = extract_locations(proposal_ids, competition) #Extract locations from proposal ids
-
+    df_locations = pd.DataFrame(locations, columns=['Lat', 'Long'])
     feature_group = FeatureGroup(competition)
+
+    # Find SW and NE corners of the data
+    sw = df_locations[['Lat', 'Long']].min().values.tolist()
+    ne = df_locations[['Lat', 'Long']].max().values.tolist()
+
     for coord in locations:
-        folium.Circle(location=[coord[0], coord[1]],
-                            fill_color=color, radius=10000,
+        folium.CircleMarker(location=[coord[0], coord[1]],
+                            fill_color=color, radius=5,
                             color = color, opacity = 0.5,
                             weight = 1).add_to(feature_group)
     feature_group.add_to(mapit)
     LayerControl().add_to(mapit)
     mapit.get_root().html.add_child(folium.Element(title_html))
+    mapit.fit_bounds([sw, ne])
     mapit.save('applicant_locations_' + competition + '.html')
 
 def extract_locations(proposal_ids, competition):
