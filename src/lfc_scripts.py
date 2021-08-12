@@ -11,15 +11,10 @@ site.login(config.username, config.api_key)
 geolocator = Nominatim(user_agent = "map")
 
 def main():
-    '''
+
     #Parse arguments
     competition = sys.argv[1]
     color = sys.argv[2]
-
-    '''
-
-    competition = "RacialEquity2030"
-    color = 'blue'
 
     #Setup Map
     mapit = folium.Map()
