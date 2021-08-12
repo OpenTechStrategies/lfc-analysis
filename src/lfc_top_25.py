@@ -14,7 +14,7 @@ geolocator = Nominatim(user_agent = "map")
 def main():
 
     # Setup Map
-    mapit = folium.Map(location=[48, 2], zoom_start=2)
+    mapit = folium.Map()
 
     # Import extra data
     df_extra_data = pd.read_csv('highly_ranked_proposals.csv')
@@ -22,6 +22,8 @@ def main():
     # Create institution type feature groups
     fg_NGO = FeatureGroup("NGO")
     fg_academic = FeatureGroup("Academic Institution")
+
+    locations = [] # Locations list
     for index, row in df_extra_data.iterrows():
         competition = row['Competition']
         id = str(row['ID'])
@@ -35,49 +37,33 @@ def main():
         proposal = response['result']
 
         coord = extract_top_25_locations(proposal) # Extract Location
+        locations.append(coord)
 
-        if coord == ():
-            print("Empty coordinate")
+        # Map Location
+        if row['Type'] == 'NGO':
+            folium.CircleMarker(location=[coord[0], coord[1]],
+                                fill_color='blue', radius=5,
+                                color='blue', opacity=0.5,
+                                weight=1).add_to(fg_NGO)
         else:
-            # Map Location
 
-            # Create square icon
-            icon_square = folium.plugins.BeautifyIcon(
-                icon_shape='rectangle-dot',
-                border_color='red', opacity=0.5,
-                border_width=7
-            )
-
-            if row['Type'] == 'NGO':
-                folium.Circle(location=[coord[0], coord[1]],
-                                    fill_color='blue', radius=10000,
-                                    color='blue', opacity=0.5,
-                                    weight=1).add_to(fg_NGO)
-            else:
-
-                folium.Rectangle(bounds=create_square_bounds(coord, 0.1),
-                                 color='red', fill=True,
-                                 fill_color='red',
-                                 fill_opacity=0.2, opacity=0.5).add_to(fg_academic)
+            folium.CircleMarker(location=[coord[0], coord[1]],
+                                fill_color='red', radius=5,
+                                color='red', opacity=0.5,
+                                weight=1).add_to(fg_academic)
     fg_NGO.add_to(mapit)
     fg_academic.add_to(mapit)
     LayerControl().add_to(mapit)
-    #mapit.get_root().html.add_child(folium.Element(title_html))
+
+    # Find NE and SW corners
+    df_locations = pd.DataFrame(locations, columns=['Lat', 'Long'])
+    sw = df_locations[['Lat', 'Long']].min().values.tolist()
+    ne = df_locations[['Lat', 'Long']].max().values.tolist()
+
+    mapit.fit_bounds([sw, ne])
     mapit.save('top_25_map.html')
 
-def create_square_bounds(coord, side_length):
 
-    W = coord[1] - side_length
-    E = coord[1] + side_length
-    N = coord[0] + side_length
-    S = coord[0] - side_length
-
-    upper_left = (N, W)
-    upper_right = (N, E)
-    lower_right = (S, E)
-    lower_left = (S, W)
-
-    return [upper_left, upper_right, lower_right, lower_left]
 def extract_top_25_locations(proposal):
 
     location = concat_org_location(proposal)
